@@ -1,0 +1,46 @@
+//Get latest Tweets Whom user follows
+
+You're right that we could have used the condition `follower_user_id = (SELECT user_id FROM user WHERE username = '${username}')` in the `WHERE` clause instead of using a subquery. However, there's a subtle difference between the two approaches.
+
+**Using a subquery in the `FROM` clause**
+
+When we use a subquery in the `FROM` clause, like this:
+```sql
+SELECT username
+FROM user
+INNER JOIN tweet ON user.user_id = tweet.user_id
+INNER JOIN (
+  SELECT following_user_id
+  FROM follower
+  WHERE follower_user_id = (SELECT user_id FROM user WHERE username = '${username}')
+) follower ON user.user_id = follower.following_user_id;
+```
+We're creating a temporary result set that contains only the `following_user_id`s that the user with username `${username}` is following. This temporary result set is then joined with the `user` table and the `tweet` table.
+
+**Using a condition in the `WHERE` clause**
+
+If we were to use the condition in the `WHERE` clause, like this:
+```sql
+SELECT username
+FROM user
+INNER JOIN tweet ON user.user_id = tweet.user_id
+INNER JOIN follower ON user.user_id = follower.following_user_id
+WHERE follower.follower_user_id = (SELECT user_id FROM user WHERE username = '${username}');
+```
+We would be filtering the entire result set after the joins have been performed. This means that the `WHERE` clause would be applied to the entire result set, which could lead to different results.
+
+Here's why:
+
+* In the subquery approach, we're filtering the `follower` table before joining it with the `user` table and the `tweet` table. This means that we're only joining the `user` table and the `tweet` table with the filtered `follower` table.
+* In the `WHERE` clause approach, we're joining the `user` table, the `tweet` table, and the `follower` table first, and then applying the filter to the entire result set. This means that we're filtering out rows that don't match the condition, but we're still joining all three tables.
+
+In this specific case, the results might be the same, but in general, using a subquery in the `FROM` clause can be more efficient and flexible than using a condition in the `WHERE` clause.
+
+######################
+
+//Getting date using UTC AND padStart()
+
+.padStart(2, '0'): This method is used to add leading zeros to the string if it's less than 2 characters long. For example:
+
+If the month is January (1), padStart(2, '0') would convert it to "01".
+If the month is October (10), padStart(2, '0') wouldn't change it, as it's already 2 characters long.

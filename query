@@ -1,0 +1,20 @@
+app.get('/user/tweets/feed/', authenticateToken, async (request, response) => {
+  const {username} = request
+  const getUserId = `SELECT user_id FROM user WHERE username = '${username}';`
+  const userId = await db.get(getUserId)
+  console.log(userId)
+
+  const getFollowingUserId = `SELECT following_user_id FROM follower WHERE follower_user_id = '${userId.user_id}';`
+  const followingUserId = await db.all(getFollowingUserId)
+  const followingUserIds = followingUserId.map(row => row.following_user_id)
+
+  const getTweetQuery = `
+  SELECT 
+    user.username as username, tweet, date_time as dateTime
+  FROM tweet INNER JOIN user ON user.user_id = tweet.user_id
+  WHERE user.user_id IN(${followingUserIds.map(id => id).join(', ')})
+  LIMIT 4
+  ;`
+  const getTweet = await db.all(getTweetQuery)
+  response.send(getTweet)
+})
